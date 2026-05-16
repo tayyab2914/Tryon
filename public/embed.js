@@ -36,6 +36,10 @@
 
   const widgetConfig = {
     enabled: true,
+    // `verified` gates only the try-on API call, not the button. An
+    // unverified store still shows the button — clicking it surfaces a
+    // "verify your domain" notice instead of running a try-on.
+    verified: true,
     buttonLabel: 'Try On with AI',
     accentColor: '#1a1a1a',
     consentText: DEFAULT_CONSENT,
@@ -48,13 +52,16 @@
     if (configPromise) return configPromise;
     configPromise = fetch(`${API_BASE}/api/widget/${encodeURIComponent(brandId)}`)
       .then(res => {
-        // 404 = unknown brand id → treat the widget as off for this store.
-        if (res.status === 404) { widgetConfig.enabled = false; return; }
+        // 404 = unknown brand id → the store/domain isn't verified yet.
+        // Keep the widget visible but unverified: the button still shows,
+        // and clicking it explains how to unlock try-on.
+        if (res.status === 404) { widgetConfig.verified = false; return; }
         // Any other non-OK status: keep defaults; server-side gates still apply.
         if (!res.ok) return;
         return res.json().then(data => {
           if (!data || typeof data !== 'object') return;
           widgetConfig.enabled = data.enabled !== false;
+          if (typeof data.verified === 'boolean') widgetConfig.verified = data.verified;
           if (data.buttonLabel) widgetConfig.buttonLabel = String(data.buttonLabel);
           if (data.accentColor) widgetConfig.accentColor = String(data.accentColor);
           if (data.consentText) widgetConfig.consentText = String(data.consentText);
@@ -355,6 +362,10 @@
 
   // ---------- 4. MODAL ----------
   function openModal(product) {
+    // Unverified store/domain: show a notice instead of the upload flow.
+    // The try-on API is never called until the domain is verified.
+    if (!widgetConfig.verified) { openUnverifiedModal(); return; }
+
     const accent = widgetConfig.accentColor;
     const overlay = document.createElement('div');
     overlay.id = 'tryon-overlay';
@@ -621,6 +632,88 @@
     };
   }
 
+  // Shown when the store/domain isn't verified yet. No photo is uploaded
+  // and the try-on API is never called — the shopper just sees how to
+  // unlock the widget.
+  function openUnverifiedModal() {
+    const overlay = document.createElement('div');
+    overlay.id = 'tryon-overlay';
+    overlay.innerHTML = `
+      <style>
+        #tryon-overlay {
+          position: fixed; inset: 0;
+          background: rgba(0,0,0,0.6);
+          z-index: 999999;
+          display: flex; align-items: center; justify-content: center;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          animation: tryonFadeIn 0.2s ease;
+        }
+        @keyframes tryonFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes tryonSlideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .tryon-modal {
+          background: #fff;
+          width: 92%; max-width: 440px;
+          border-radius: 2px; overflow: hidden;
+          animation: tryonSlideUp 0.25s ease;
+        }
+        .tryon-header {
+          padding: 22px 28px;
+          border-bottom: 1px solid #ebebeb;
+          display: flex; justify-content: space-between; align-items: center;
+        }
+        .tryon-title {
+          font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+          color: #000; font-weight: 600;
+        }
+        .tryon-close {
+          background: none; border: none; font-size: 22px; cursor: pointer;
+          color: #999; line-height: 1; padding: 0; transition: color 0.2s;
+        }
+        .tryon-close:hover { color: #000; }
+        .tryon-body { padding: 38px 28px; text-align: center; }
+        .tryon-lock { font-size: 34px; margin-bottom: 16px; }
+        .tryon-unverified-title {
+          font-size: 16px; font-weight: 600; color: #000; margin-bottom: 8px;
+        }
+        .tryon-unverified-desc {
+          color: #888; font-size: 13px; line-height: 1.6;
+        }
+        .tryon-footer { padding: 20px 28px; border-top: 1px solid #ebebeb; }
+        .tryon-btn-secondary {
+          width: 100%; padding: 14px;
+          font-family: inherit; font-size: 11px;
+          letter-spacing: 2px; text-transform: uppercase;
+          cursor: pointer; transition: all 0.2s;
+          background: #fff; color: #000; border: 1px solid #000;
+        }
+        .tryon-btn-secondary:hover { background: #000; color: #fff; }
+      </style>
+
+      <div class="tryon-modal">
+        <div class="tryon-header">
+          <div class="tryon-title">Virtual Fitting Room</div>
+          <button class="tryon-close" aria-label="Close">×</button>
+        </div>
+        <div class="tryon-body">
+          <div class="tryon-lock">🔒</div>
+          <div class="tryon-unverified-title">Domain unverified</div>
+          <div class="tryon-unverified-desc">
+            Verify your domain to access virtual try-on.
+          </div>
+        </div>
+        <div class="tryon-footer">
+          <button class="tryon-btn-secondary tryon-close-btn">Close</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+    const close = () => overlay.remove();
+    overlay.querySelector('.tryon-close').onclick = close;
+    overlay.querySelector('.tryon-close-btn').onclick = close;
+    overlay.onclick = (e) => { if (e.target === overlay) close(); };
+  }
+
   // ---------- 5. STEP MANAGEMENT ----------
   function showStep(step) {
     const overlay = document.getElementById('tryon-overlay');
@@ -678,6 +771,9 @@
     if (!widgetConfig.enabled) {
       console.log('[TryOn] Virtual try-on is turned off for this store');
       return;
+    }
+    if (!widgetConfig.verified) {
+      console.log('[TryOn] Domain unverified — button shown, try-on disabled until the domain is verified');
     }
 
     let products = detectManual();

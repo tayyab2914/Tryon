@@ -39,7 +39,7 @@ export async function getWidgetConfig(brandId: string): Promise<WidgetConfig | n
 
 /** Absolute base URL of this app, with no trailing slash. */
 export function appBaseUrl(): string {
-  return (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  return (process.env.APP_URL ?? "https://tryon-gold.vercel.app").replace(/\/$/, "");
 }
 
 /** Absolute URL of the embeddable widget script. */

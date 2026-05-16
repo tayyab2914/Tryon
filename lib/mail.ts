@@ -23,7 +23,7 @@ function fromHeader(): string {
 }
 
 function appUrl(): string {
-  return process.env.APP_URL ?? "http://localhost:3000";
+  return process.env.APP_URL ?? "https://tryon-gold.vercel.app";
 }
 
 /** Inbox that receives "Book a demo" lead notifications. */

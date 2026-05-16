@@ -16,9 +16,9 @@
     document.querySelector('script[data-brand-id]');
   const brandId = scriptTag?.getAttribute('data-brand-id');
 
-  // In production point this to your deployed Next.js URL.
+  // Deployed Next.js URL. Override per-store with data-api-base on the script tag.
   // Strip any trailing slash so `${API_BASE}/api/tryon` never produces a double slash.
-  const API_BASE = (scriptTag?.getAttribute('data-api-base') || 'http://localhost:3000')
+  const API_BASE = (scriptTag?.getAttribute('data-api-base') || 'https://tryon-gold.vercel.app')
     .replace(/\/+$/, '');
 
   if (!brandId) {

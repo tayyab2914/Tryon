@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { createSession, destroySession } from "@/lib/session";
 import { sendVerificationEmail } from "@/lib/mail";
+import { appBaseUrl } from "@/lib/app-url";
 
 export interface FormState {
   error?: string;
@@ -16,7 +17,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const VERIFY_TTL_MS = 1000 * 60 * 60 * 24;
 
 function appUrl(): string {
-  return process.env.APP_URL ?? "https://tryon-gold.vercel.app";
+  return appBaseUrl();
 }
 
 function hashToken(token: string): string {

@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { appBaseUrl } from "@/lib/app-url";
 
 export interface WidgetConfig {
   enabled: boolean;
@@ -37,10 +38,7 @@ export async function getWidgetConfig(brandId: string): Promise<WidgetConfig | n
   };
 }
 
-/** Absolute base URL of this app, with no trailing slash. */
-export function appBaseUrl(): string {
-  return (process.env.APP_URL ?? "https://tryon-gold.vercel.app").replace(/\/$/, "");
-}
+export { appBaseUrl };
 
 /** Absolute URL of the embeddable widget script. */
 export function widgetScriptSrc(): string {

@@ -1,4 +1,5 @@
 import nodemailer, { type Transporter } from "nodemailer";
+import { appBaseUrl } from "@/lib/app-url";
 
 let cached: Transporter | null = null;
 
@@ -23,7 +24,7 @@ function fromHeader(): string {
 }
 
 function appUrl(): string {
-  return process.env.APP_URL ?? "https://tryon-gold.vercel.app";
+  return appBaseUrl();
 }
 
 /** Inbox that receives "Book a demo" lead notifications. */

@@ -26,6 +26,51 @@
     return;
   }
 
+  // ---------- 1b. WIDGET CONFIG ----------
+  // Brand-controlled cosmetics, fetched once from the FitRoom API. Until that
+  // fetch resolves — or if it fails — these defaults keep the widget working.
+  const DEFAULT_CONSENT =
+    'I agree to upload my photo for a one-time virtual try-on. I understand it is ' +
+    'processed only to generate my result, is never saved to any database, and is ' +
+    'removed the moment I refresh or close this window.';
+
+  const widgetConfig = {
+    enabled: true,
+    buttonLabel: 'Try On with AI',
+    accentColor: '#1a1a1a',
+    consentText: DEFAULT_CONSENT,
+  };
+
+  let configPromise = null;
+
+  // Fetches the brand's widget config exactly once; later calls reuse it.
+  function ensureConfig() {
+    if (configPromise) return configPromise;
+    configPromise = fetch(`${API_BASE}/api/widget/${encodeURIComponent(brandId)}`)
+      .then(res => {
+        // 404 = unknown brand id → treat the widget as off for this store.
+        if (res.status === 404) { widgetConfig.enabled = false; return; }
+        // Any other non-OK status: keep defaults; server-side gates still apply.
+        if (!res.ok) return;
+        return res.json().then(data => {
+          if (!data || typeof data !== 'object') return;
+          widgetConfig.enabled = data.enabled !== false;
+          if (data.buttonLabel) widgetConfig.buttonLabel = String(data.buttonLabel);
+          if (data.accentColor) widgetConfig.accentColor = String(data.accentColor);
+          if (data.consentText) widgetConfig.consentText = String(data.consentText);
+        });
+      })
+      .catch(() => { /* offline or blocked — keep defaults */ });
+    return configPromise;
+  }
+
+  // Escapes brand- or page-supplied strings before they go into innerHTML.
+  function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>"]/g, c => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]
+    ));
+  }
+
   // ---------- 2. DETECTION ----------
   function detectManual() {
     return Array.from(document.querySelectorAll('[data-tryon-product]'))
@@ -215,6 +260,7 @@
   function injectButton(product) {
     if (!product.target || product.target.querySelector('.tryon-btn')) return;
 
+    const accent = widgetConfig.accentColor;
     const btn = document.createElement('button');
     btn.className = 'tryon-btn';
     btn.type = 'button';
@@ -223,15 +269,15 @@
         <circle cx="12" cy="8" r="4"/>
         <path d="M4 21c0-4 4-7 8-7s8 3 8 7"/>
       </svg>
-      <span>Try It On Virtually</span>
+      <span>${escapeHtml(widgetConfig.buttonLabel)}</span>
     `;
     btn.style.cssText = `
       width: 100%;
       padding: 16px;
       margin-bottom: 12px;
       background: transparent;
-      color: #1a1a1a;
-      border: 1px solid #1a1a1a;
+      color: ${accent};
+      border: 1px solid ${accent};
       font-family: inherit;
       font-size: 12px;
       letter-spacing: 3px;
@@ -243,8 +289,8 @@
       gap: 10px;
       transition: all 0.3s;
     `;
-    btn.onmouseenter = () => { btn.style.background = '#1a1a1a'; btn.style.color = '#fff'; };
-    btn.onmouseleave = () => { btn.style.background = 'transparent'; btn.style.color = '#1a1a1a'; };
+    btn.onmouseenter = () => { btn.style.background = accent; btn.style.color = '#fff'; };
+    btn.onmouseleave = () => { btn.style.background = 'transparent'; btn.style.color = accent; };
     btn.onclick = () => openModal(product);
 
     product.target.appendChild(btn);
@@ -261,10 +307,11 @@
       card.style.position = 'relative';
     }
 
+    const accent = widgetConfig.accentColor;
     const btn = document.createElement('button');
     btn.className = 'tryon-card-btn';
     btn.type = 'button';
-    btn.title = 'Try It On Virtually';
+    btn.title = widgetConfig.buttonLabel;
     btn.innerHTML = `
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
         <circle cx="12" cy="8" r="4"/>
@@ -278,8 +325,8 @@
       z-index: 5;
       padding: 7px 11px;
       background: rgba(255,255,255,0.95);
-      color: #1a1a1a;
-      border: 1px solid #1a1a1a;
+      color: ${accent};
+      border: 1px solid ${accent};
       border-radius: 999px;
       font-family: inherit;
       font-size: 10px;
@@ -293,8 +340,8 @@
       box-shadow: 0 1px 4px rgba(0,0,0,0.15);
       transition: all 0.2s;
     `;
-    btn.onmouseenter = () => { btn.style.background = '#1a1a1a'; btn.style.color = '#fff'; };
-    btn.onmouseleave = () => { btn.style.background = 'rgba(255,255,255,0.95)'; btn.style.color = '#1a1a1a'; };
+    btn.onmouseenter = () => { btn.style.background = accent; btn.style.color = '#fff'; };
+    btn.onmouseleave = () => { btn.style.background = 'rgba(255,255,255,0.95)'; btn.style.color = accent; };
     // Cards are usually wrapped in a link — don't navigate away on click.
     btn.onclick = (e) => {
       e.preventDefault();
@@ -308,6 +355,7 @@
 
   // ---------- 4. MODAL ----------
   function openModal(product) {
+    const accent = widgetConfig.accentColor;
     const overlay = document.createElement('div');
     overlay.id = 'tryon-overlay';
     overlay.innerHTML = `
@@ -403,7 +451,7 @@
         }
         .tryon-spinner {
           width: 30px; height: 30px;
-          border: 2px solid #ebebeb; border-top-color: #000;
+          border: 2px solid #ebebeb; border-top-color: ${accent};
           border-radius: 50%;
           animation: tryonSpin 0.8s linear infinite;
           margin: 0 auto 16px;
@@ -429,9 +477,9 @@
           transition: all 0.2s;
         }
         .tryon-btn-primary {
-          background: #000; color: #fff; border: 1px solid #000;
+          background: ${accent}; color: #fff; border: 1px solid ${accent};
         }
-        .tryon-btn-primary:hover { background: #333; border-color: #333; }
+        .tryon-btn-primary:hover { filter: brightness(1.25); }
         .tryon-btn-secondary {
           background: #fff; color: #000; border: 1px solid #000;
         }
@@ -439,6 +487,19 @@
         .tryon-privacy {
           font-size: 10px; color: #aaa; text-align: center;
           margin-top: 20px; letter-spacing: 0.5px;
+        }
+        .tryon-consent {
+          display: flex; gap: 9px; align-items: flex-start;
+          font-size: 12px; line-height: 1.55; color: #555;
+          margin-bottom: 18px; cursor: pointer;
+        }
+        .tryon-consent input {
+          margin: 2px 0 0; flex-shrink: 0;
+          width: 15px; height: 15px; cursor: pointer;
+          accent-color: ${accent};
+        }
+        .tryon-upload.tryon-disabled {
+          opacity: 0.45; pointer-events: none;
         }
         #tryon-file { display: none; }
       </style>
@@ -463,7 +524,11 @@
             <div class="tryon-step-desc">
               For the best result, use a clear front-facing photo against a plain background.
             </div>
-            <label for="tryon-file" class="tryon-upload">
+            <label class="tryon-consent">
+              <input type="checkbox" id="tryon-consent-check">
+              <span>${escapeHtml(widgetConfig.consentText)}</span>
+            </label>
+            <label for="tryon-file" class="tryon-upload tryon-disabled">
               <div class="tryon-upload-icon">⬆</div>
               <div class="tryon-upload-text">Choose a photo or drag here</div>
               <div class="tryon-upload-hint">JPG or PNG · Max 10 MB</div>
@@ -514,6 +579,15 @@
     overlay.querySelector('.tryon-close').onclick = close;
     overlay.querySelector('.tryon-close-btn').onclick = close;
     overlay.onclick = (e) => { if (e.target === overlay) close(); };
+
+    // ── Consent gate ────────────────────────────────────────────────────
+    // The upload zone stays inert (pointer-events:none) until the shopper
+    // ticks the consent box, so no photo can be chosen without agreement.
+    const consentCheck = overlay.querySelector('#tryon-consent-check');
+    const uploadZone = overlay.querySelector('.tryon-upload');
+    const syncConsent = () => uploadZone.classList.toggle('tryon-disabled', !consentCheck.checked);
+    consentCheck.onchange = syncConsent;
+    syncConsent();
 
     // ── File upload ─────────────────────────────────────────────────────
     const fileInput = overlay.querySelector('#tryon-file');
@@ -599,7 +673,13 @@
   }
 
   // ---------- 7. INIT ----------
-  function init() {
+  async function init() {
+    await ensureConfig();
+    if (!widgetConfig.enabled) {
+      console.log('[TryOn] Virtual try-on is turned off for this store');
+      return;
+    }
+
     let products = detectManual();
     if (products.length === 0) products = detectAuto();
 

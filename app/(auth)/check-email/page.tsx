@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { ResendButton } from "@/components/auth/ResendButton";
 
-export const metadata = { title: "Check your email · FitRoom" };
+export const metadata = { title: "Check your email · FitRoom AI" };
 
 interface Props {
   searchParams: Promise<{ email?: string }>;

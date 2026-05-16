@@ -38,7 +38,7 @@ export function Sidebar({ brand }: SidebarProps) {
   return (
     <aside className="hidden lg:flex w-[240px] shrink-0 flex-col border-r border-line bg-canvas">
       <div className="px-5 py-5">
-        <Link href="/dashboard" aria-label="FitRoom" className="inline-flex">
+        <Link href="/dashboard" aria-label="FitRoom AI" className="inline-flex">
           <Logo size={28} withWordmark />
         </Link>
       </div>

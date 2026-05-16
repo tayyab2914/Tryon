@@ -16,6 +16,78 @@ model Brand {
   updatedAt       DateTime @updatedAt
 
   verificationTokens VerificationToken[]
+  tryOns             TryOn[]
+  widgetSettings     WidgetSettings?
+  domains            Domain[]
+}
+
+model Domain {
+  id         String    @id @default(cuid())
+  brandId    String
+  hostname   String // normalized: lowercase, no protocol/port/path
+  token      String // raw token published in the DNS TXT record
+  verified   Boolean   @default(false)
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  brand      Brand     @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@unique([brandId, hostname])
+  @@index([hostname])
+  @@index([brandId])
+}
+
+model WidgetSettings {
+  id          String   @id @default(cuid())
+  brandId     String   @unique
+  enabled     Boolean  @default(true)
+  buttonLabel String   @default("Try On with AI")
+  accentColor String   @default("#0c0c0c")
+  consentText String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  brand       Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
+}
+
+enum TryOnStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model DemoRequest {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  company     String
+  website     String?
+  catalogSize String?
+  message     String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model TryOn {
+  id              String      @id @default(cuid())
+  brandId         String
+  garment         String
+  shopper         String
+  status          TryOnStatus @default(PROCESSING)
+  // gs:// URIs in the GCS bucket. Inputs are uploaded before the Vertex AI
+  // call; resultImageUri is set once generation completes.
+  personImageUri  String?
+  productImageUri String?
+  resultImageUri  String?
+  error           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  brand           Brand       @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([brandId])
 }
 
 model VerificationToken {

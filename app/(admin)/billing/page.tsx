@@ -3,7 +3,7 @@ import { PageShell } from "@/components/layout/PageShell";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 
-export const metadata = { title: "Billing · FitRoom" };
+export const metadata = { title: "Billing · FitRoom AI" };
 
 const PLANS = [
   { name: "Free", price: "$0", tryons: "200 try-ons / month", current: true },

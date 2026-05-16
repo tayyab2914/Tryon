@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { SigninForm } from "@/components/auth/SigninForm";
 
-export const metadata = { title: "Sign in · FitRoom" };
+export const metadata = { title: "Sign in · FitRoom AI" };
 
 export default function SigninPage() {
   return (
@@ -15,7 +15,7 @@ export default function SigninPage() {
         <SigninForm />
       </Card>
       <p className="text-sm text-muted text-center">
-        New to FitRoom?{" "}
+        New to FitRoom AI?{" "}
         <Link href="/signup" className="text-ink font-medium hover:underline">
           Create an account
         </Link>

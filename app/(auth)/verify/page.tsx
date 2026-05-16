@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { verifyEmailAction } from "@/app/actions/auth";
 
-export const metadata = { title: "Verify email · FitRoom" };
+export const metadata = { title: "Verify email · FitRoom AI" };
 
 interface Props {
   searchParams: Promise<{ token?: string }>;

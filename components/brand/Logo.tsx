@@ -34,7 +34,7 @@ export function Logo({ size = 36, withWordmark = false, className }: LogoProps) 
       </span>
       {withWordmark && (
         <span className="flex flex-col leading-none">
-          <span className="text-[15px] font-semibold tracking-tight text-ink">FitRoom</span>
+          <span className="text-[15px] font-semibold tracking-tight text-ink">FitRoom AI</span>
           <span className="mt-0.5 text-[11px] text-muted">Try-on dashboard</span>
         </span>
       )}

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Field } from "@/components/ui/Field";
 import { getCurrentBrand } from "@/lib/session";
 
-export const metadata = { title: "Settings · FitRoom" };
+export const metadata = { title: "Settings · FitRoom AI" };
 
 export default async function SettingsPage() {
   const brand = await getCurrentBrand();

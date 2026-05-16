@@ -29,7 +29,7 @@ export function SignupForm() {
         {pending ? "Creating account…" : "Create account"}
       </Button>
       <p className="text-[11px] text-muted text-center mt-1">
-        By continuing, you agree to FitRoom&apos;s Terms and Privacy Policy.
+        By continuing, you agree to FitRoom AI&apos;s Terms and Privacy Policy.
       </p>
     </form>
   );

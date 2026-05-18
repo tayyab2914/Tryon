@@ -1,9 +1,18 @@
-import { promises as dns } from "node:dns";
+import { Resolver } from "node:dns/promises";
 import { randomBytes } from "node:crypto";
 import { db } from "@/lib/db";
 
 const HOSTNAME_RE = /^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/;
 const DNS_TIMEOUT_MS = 5000;
+
+/**
+ * Public resolvers used for verification lookups. Node's default resolver
+ * inherits the host machine's DNS config, which in some environments points
+ * at 127.0.0.1 with nothing listening — yielding ECONNREFUSED even when the
+ * record is correctly published. Querying a known-good public resolver makes
+ * verification independent of the host's DNS setup.
+ */
+const PUBLIC_DNS_SERVERS = ["8.8.8.8", "1.1.1.1"];
 
 /**
  * Normalizes user-entered domain input to a bare hostname.
@@ -57,9 +66,12 @@ export async function checkDnsTxt(hostname: string, token: string): Promise<DnsC
   const name = txtRecordName(hostname);
   const expected = txtRecordValue(token);
 
+  const resolver = new Resolver({ timeout: DNS_TIMEOUT_MS });
+  resolver.setServers(PUBLIC_DNS_SERVERS);
+
   let records: string[][];
   try {
-    records = await withTimeout(dns.resolveTxt(name), DNS_TIMEOUT_MS);
+    records = await withTimeout(resolver.resolveTxt(name), DNS_TIMEOUT_MS);
   } catch (err) {
     const code = (err as NodeJS.ErrnoException).code;
     if (code === "ENOTFOUND" || code === "ENODATA") {

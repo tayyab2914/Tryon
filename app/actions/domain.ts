@@ -41,6 +41,7 @@ export async function addDomain(
   }
 
   revalidatePath("/install");
+  revalidatePath("/dashboard");
   return { ok: true };
 }
 
@@ -99,5 +100,6 @@ export async function removeDomain(
   await db.domain.deleteMany({ where: { id: domainId, brandId: brand.id } });
 
   revalidatePath("/install");
+  revalidatePath("/dashboard");
   return { ok: true };
 }

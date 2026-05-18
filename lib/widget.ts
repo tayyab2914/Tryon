@@ -1,41 +1,33 @@
 import { db } from "@/lib/db";
 import { appBaseUrl } from "@/lib/app-url";
 
-export interface WidgetConfig {
-  enabled: boolean;
-  buttonLabel: string;
-  accentColor: string;
-  consentText: string;
-}
-
 /** Default privacy-consent copy shown beside the upload checkbox. */
 export const DEFAULT_CONSENT_TEXT =
   "I agree to upload my photo for a one-time virtual try-on. I understand it is processed only to generate my result, is never saved to any database, and is removed the moment I refresh or close this window.";
 
-const DEFAULTS: Omit<WidgetConfig, "enabled"> = {
+/**
+ * Fixed cosmetic config served to the embedded widget. Brands no longer
+ * customize this; the widget script (public/embed.js) tolerates missing
+ * fields, so the shape stays stable for already-deployed embeds.
+ */
+export const WIDGET_CONFIG = {
+  enabled: true,
   buttonLabel: "Try On with AI",
   accentColor: "#0c0c0c",
   consentText: DEFAULT_CONSENT_TEXT,
-};
+} as const;
 
 /**
- * Resolves a brand's public widget configuration. Returns null when the
- * brand id is unknown — callers should treat that as "store not set up".
+ * Reports whether a brand id maps to a real brand. Callers treat a false
+ * result as "store not set up for virtual try-on".
  */
-export async function getWidgetConfig(brandId: string): Promise<WidgetConfig | null> {
+export async function brandExists(brandId: string): Promise<boolean> {
+  if (!brandId) return false;
   const brand = await db.brand.findUnique({
     where: { id: brandId },
-    select: { id: true, widgetSettings: true },
+    select: { id: true },
   });
-  if (!brand) return null;
-
-  const s = brand.widgetSettings;
-  return {
-    enabled: s?.enabled ?? true,
-    buttonLabel: s?.buttonLabel?.trim() || DEFAULTS.buttonLabel,
-    accentColor: s?.accentColor?.trim() || DEFAULTS.accentColor,
-    consentText: s?.consentText?.trim() || DEFAULTS.consentText,
-  };
+  return brand !== null;
 }
 
 export { appBaseUrl };

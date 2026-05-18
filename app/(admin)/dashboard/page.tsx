@@ -3,17 +3,22 @@ import { PageShell } from "@/components/layout/PageShell";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { InstallSnippet } from "@/components/dashboard/InstallSnippet";
 import { RecentTryOns } from "@/components/dashboard/RecentTryOns";
+import { DomainManager } from "@/components/dashboard/DomainManager";
 import { getCurrentBrand } from "@/lib/session";
 import { getTryOnStats } from "@/lib/tryon";
+import { db } from "@/lib/db";
 import { appBaseUrl, widgetScriptSrc } from "@/lib/widget";
 
 export const metadata = { title: "Overview · FitRoom AI" };
 
 export default async function DashboardPage() {
   const brand = await getCurrentBrand();
-  const stats = brand
-    ? await getTryOnStats(brand.id)
-    : { total: 0, last30Days: 0, avgPerDay: 0 };
+  const [stats, domains] = brand
+    ? await Promise.all([
+        getTryOnStats(brand.id),
+        db.domain.findMany({ where: { brandId: brand.id }, orderBy: { createdAt: "asc" } }),
+      ])
+    : [{ total: 0, last30Days: 0, avgPerDay: 0 }, []];
 
   return (
     <>
@@ -33,6 +38,7 @@ export default async function DashboardPage() {
             <RecentTryOns />
           </div>
           <div className="flex flex-col gap-4">
+            {brand && domains.length === 0 && <DomainManager domains={domains} />}
             <InstallSnippet
               scriptSrc={widgetScriptSrc()}
               apiBase={appBaseUrl()}

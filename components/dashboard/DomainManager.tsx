@@ -16,6 +16,20 @@ interface DomainView {
 
 const EMPTY: DomainFormState = {};
 
+/**
+ * Formats a date identically on the server and client. An explicit locale and
+ * UTC timezone keep the output deterministic, avoiding hydration mismatches
+ * that bare `toLocaleDateString()` causes when host locale/timezone differ.
+ */
+function formatDate(value: Date | string): string {
+  return new Date(value).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export function DomainManager({ domains }: { domains: DomainView[] }) {
   const [addState, addAction, adding] = useActionState(addDomain, EMPTY);
 
@@ -60,17 +74,10 @@ export function DomainManager({ domains }: { domains: DomainView[] }) {
 function DomainRow({ domain }: { domain: DomainView }) {
   const [verifyState, verifyAction, verifying] = useActionState(verifyDomain, EMPTY);
   const [removeState, removeAction, removing] = useActionState(removeDomain, EMPTY);
-  const [copied, setCopied] = useState(false);
 
   const recordName = `_fitroom-verify.${domain.hostname}`;
   const recordValue = `fitroom-site-verification=${domain.token}`;
   const error = verifyState.error ?? removeState.error;
-
-  async function copyValue() {
-    await navigator.clipboard.writeText(recordValue);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  }
 
   return (
     <li className="rounded-[12px] border border-line p-4 flex flex-col gap-3">
@@ -90,7 +97,7 @@ function DomainRow({ domain }: { domain: DomainView }) {
       {domain.verified ? (
         domain.verifiedAt && (
           <span className="text-xs text-muted">
-            Verified on {new Date(domain.verifiedAt).toLocaleDateString()}
+            Verified on {formatDate(domain.verifiedAt)}
           </span>
         )
       ) : (
@@ -98,20 +105,17 @@ function DomainRow({ domain }: { domain: DomainView }) {
           <p className="text-xs text-muted">Add this TXT record to your DNS, then click Verify.</p>
           <div className="rounded-[10px] border border-line bg-canvas overflow-hidden text-xs">
             <RecordRow label="Type" value="TXT" />
-            <RecordRow label="Name" value={recordName} mono />
+            <RecordRow
+              label="Name"
+              value={recordName}
+              mono
+              action={<CopyButton value={recordName} label="record name" />}
+            />
             <RecordRow
               label="Value"
               value={recordValue}
               mono
-              action={
-                <button
-                  type="button"
-                  onClick={copyValue}
-                  className="shrink-0 text-muted hover:text-ink font-medium"
-                >
-                  {copied ? "Copied" : "Copy"}
-                </button>
-              }
+              action={<CopyButton value={recordValue} label="record value" />}
             />
           </div>
         </div>
@@ -171,5 +175,60 @@ function RecordRow({
       <span className={`flex-1 break-all text-ink ${mono ? "font-mono" : ""}`}>{value}</span>
       {action}
     </div>
+  );
+}
+
+/** Copies `value` to the clipboard, flashing a check icon on success. */
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard access can be denied (insecure context / permissions);
+      // fail quietly — the value is still visible to copy manually.
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      title={`Copy ${label}`}
+      aria-label={copied ? `Copied ${label}` : `Copy ${label}`}
+      className="shrink-0 text-muted hover:text-ink transition-colors"
+    >
+      {copied ? (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4 text-success"
+          aria-hidden="true"
+        >
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      ) : (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+          aria-hidden="true"
+        >
+          <rect x="9" y="9" width="13" height="13" rx="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      )}
+    </button>
   );
 }

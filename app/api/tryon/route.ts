@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { corsHeaders, getWidgetConfig } from "@/lib/widget";
+import { brandExists, corsHeaders } from "@/lib/widget";
 import { getVerifiedHostnames, isOriginAllowed } from "@/lib/domain";
 import { runTryOn, type ImageInput } from "@/lib/tryon";
 
@@ -32,18 +32,10 @@ export async function POST(request: NextRequest) {
     const productLabel = String(form.get("productId") ?? "").trim() || undefined;
     const photo = form.get("photo");
 
-    // --- Brand / widget gate ---
-    const config = brandId ? await getWidgetConfig(brandId) : null;
-    if (!config) {
+    // --- Brand gate ---
+    if (!(await brandExists(brandId))) {
       return json(
         { success: false, error: "This store is not set up for virtual try-on." },
-        403,
-        origin,
-      );
-    }
-    if (!config.enabled) {
-      return json(
-        { success: false, error: "Virtual try-on is currently turned off for this store." },
         403,
         origin,
       );

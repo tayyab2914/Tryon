@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { corsHeaders, getWidgetConfig } from "@/lib/widget";
+import { brandExists, corsHeaders, WIDGET_CONFIG } from "@/lib/widget";
 
 // The config drives cosmetics only — the try-on endpoint enforces the real
 // `enabled` and domain gates — so a short edge cache is safe and spares the DB.
@@ -21,8 +21,8 @@ export async function OPTIONS(request: NextRequest) {
 
 /**
  * Public widget configuration for the embedded script (public/embed.js).
- * Returns the brand's button label, accent color, consent copy, and enabled
- * flag so the storefront widget can render itself with the brand's settings.
+ * Returns fixed cosmetics (button label, accent color, consent copy) so the
+ * storefront widget can render itself once the brand id is recognized.
  */
 export async function GET(
   request: NextRequest,
@@ -31,11 +31,10 @@ export async function GET(
   const origin = request.headers.get("origin");
   try {
     const { brandId } = await params;
-    const config = await getWidgetConfig(brandId.trim());
-    if (!config) {
+    if (!(await brandExists(brandId.trim()))) {
       return json({ error: "This store is not set up for virtual try-on." }, 404, origin);
     }
-    return json(config, 200, origin, true);
+    return json(WIDGET_CONFIG, 200, origin, true);
   } catch (err) {
     console.error("widget config lookup failed", err);
     // The widget falls back to defaults on a non-OK response, so a failure

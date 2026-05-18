@@ -17,7 +17,6 @@ model Brand {
 
   verificationTokens VerificationToken[]
   tryOns             TryOn[]
-  widgetSettings     WidgetSettings?
   domains            Domain[]
 }
 
@@ -36,19 +35,6 @@ model Domain {
   @@unique([brandId, hostname])
   @@index([hostname])
   @@index([brandId])
-}
-
-model WidgetSettings {
-  id          String   @id @default(cuid())
-  brandId     String   @unique
-  enabled     Boolean  @default(true)
-  buttonLabel String   @default("Try On with AI")
-  accentColor String   @default("#0c0c0c")
-  consentText String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  brand       Brand    @relation(fields: [brandId], references: [id], onDelete: Cascade)
 }
 
 enum TryOnStatus {

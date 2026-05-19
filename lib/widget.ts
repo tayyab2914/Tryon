@@ -30,6 +30,23 @@ export async function brandExists(brandId: string): Promise<boolean> {
   return brand !== null;
 }
 
+/**
+ * Fetches a brand together with its per-IP try-on rate-limit config.
+ * Returns null when the brand id is unknown.
+ */
+export async function getBrandTryOnConfig(brandId: string) {
+  if (!brandId) return null;
+  return db.brand.findUnique({
+    where: { id: brandId },
+    select: {
+      id: true,
+      tryOnLimitEnabled: true,
+      tryOnLimitPerIp: true,
+      tryOnLimitPeriod: true,
+    },
+  });
+}
+
 export { appBaseUrl };
 
 /** Absolute URL of the embeddable widget script. */

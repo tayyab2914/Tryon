@@ -12,6 +12,8 @@ export interface RunTryOnInput {
   brandId: string;
   /** Human-readable product label for the dashboard event log. */
   productLabel?: string;
+  /** Salted hash of the shopper's IP, for per-IP rate-limit accounting. */
+  ipHash?: string | null;
   personImage: ImageInput;
   garmentImage: ImageInput;
 }
@@ -35,7 +37,7 @@ export async function runTryOn(input: RunTryOnInput): Promise<RunTryOnResult> {
       garmentBase64: input.garmentImage.data.toString("base64"),
       garmentMimeType: input.garmentImage.mimeType,
     });
-    await logEvent(input.brandId, input.productLabel, "COMPLETED", null);
+    await logEvent(input.brandId, input.productLabel, "COMPLETED", null, input.ipHash);
     return {
       image: {
         data: Buffer.from(result.imageBase64, "base64"),
@@ -44,7 +46,7 @@ export async function runTryOn(input: RunTryOnInput): Promise<RunTryOnResult> {
     };
   } catch (err) {
     const detail = err instanceof Error ? err.message.slice(0, 200) : "error";
-    await logEvent(input.brandId, input.productLabel, "FAILED", detail);
+    await logEvent(input.brandId, input.productLabel, "FAILED", detail, input.ipHash);
     throw err;
   }
 }
@@ -55,6 +57,7 @@ async function logEvent(
   productLabel: string | undefined,
   status: "COMPLETED" | "FAILED",
   error: string | null,
+  ipHash?: string | null,
 ): Promise<void> {
   try {
     await db.tryOn.create({
@@ -64,6 +67,7 @@ async function logEvent(
         shopper: `anon_${randomUUID().slice(0, 4)}`,
         status,
         error,
+        ipHash: ipHash ?? null,
       },
     });
   } catch (err) {

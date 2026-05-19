@@ -4,12 +4,24 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Field } from "@/components/ui/Field";
+import { TryOnLimitForm } from "@/components/dashboard/TryOnLimitForm";
 import { getCurrentBrand } from "@/lib/session";
+import { db } from "@/lib/db";
 
 export const metadata = { title: "Settings · FitRoom AI" };
 
 export default async function SettingsPage() {
   const brand = await getCurrentBrand();
+  const limits = brand
+    ? await db.brand.findUnique({
+        where: { id: brand.id },
+        select: {
+          tryOnLimitEnabled: true,
+          tryOnLimitPerIp: true,
+          tryOnLimitPeriod: true,
+        },
+      })
+    : null;
 
   return (
     <>
@@ -31,6 +43,21 @@ export default async function SettingsPage() {
           <div className="flex justify-end">
             <Button size="sm" disabled>Save changes</Button>
           </div>
+        </Card>
+
+        <Card className="p-5 flex flex-col gap-5">
+          <div className="flex flex-col gap-1">
+            <h3 className="text-[15px] font-semibold tracking-tight text-ink">Try-on limits</h3>
+            <p className="text-sm text-muted">
+              Stop a single shopper from using up your generation budget. Limits are
+              enforced per IP address on every try-on request.
+            </p>
+          </div>
+          <TryOnLimitForm
+            enabled={limits?.tryOnLimitEnabled ?? true}
+            perIp={limits?.tryOnLimitPerIp ?? 5}
+            period={limits?.tryOnLimitPeriod ?? "DAILY"}
+          />
         </Card>
 
         <Card className="p-5 flex flex-col gap-5">

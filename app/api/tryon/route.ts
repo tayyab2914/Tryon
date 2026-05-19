@@ -1,7 +1,8 @@
 import { type NextRequest } from "next/server";
-import { brandExists, corsHeaders } from "@/lib/widget";
+import { getBrandTryOnConfig, corsHeaders } from "@/lib/widget";
 import { getVerifiedHostnames, isOriginAllowed } from "@/lib/domain";
 import { runTryOn, type ImageInput } from "@/lib/tryon";
+import { checkIpLimit, ipHashFromHeaders, periodLabel } from "@/lib/rate-limit";
 
 // Gemini image generation can take ~10-30s; allow generous headroom.
 export const maxDuration = 300;
@@ -33,7 +34,8 @@ export async function POST(request: NextRequest) {
     const photo = form.get("photo");
 
     // --- Brand gate ---
-    if (!(await brandExists(brandId))) {
+    const brand = await getBrandTryOnConfig(brandId);
+    if (!brand) {
       return json(
         { success: false, error: "This store is not set up for virtual try-on." },
         403,
@@ -50,6 +52,25 @@ export async function POST(request: NextRequest) {
           code: "DOMAIN_NOT_VERIFIED",
         },
         403,
+        origin,
+      );
+    }
+
+    // --- Per-IP rate limit: cap how many try-ons one shopper can generate ---
+    const ipHash = ipHashFromHeaders(request.headers);
+    const limit = await checkIpLimit(brand.id, ipHash, {
+      enabled: brand.tryOnLimitEnabled,
+      perIp: brand.tryOnLimitPerIp,
+      period: brand.tryOnLimitPeriod,
+    });
+    if (!limit.allowed) {
+      return json(
+        {
+          success: false,
+          error: `You've reached the try-on limit for this store (${limit.limit} per visitor ${periodLabel(limit.period)}). Please try again later.`,
+          code: "RATE_LIMITED",
+        },
+        429,
         origin,
       );
     }
@@ -87,7 +108,7 @@ export async function POST(request: NextRequest) {
       mimeType: photo.type,
     };
 
-    const { image } = await runTryOn({ brandId, productLabel, personImage, garmentImage });
+    const { image } = await runTryOn({ brandId, productLabel, ipHash, personImage, garmentImage });
 
     // Result is returned inline and never stored anywhere.
     return json(

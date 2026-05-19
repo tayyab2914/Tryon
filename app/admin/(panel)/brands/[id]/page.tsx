@@ -123,6 +123,21 @@ export default async function AdminBrandDetailPage({ params, searchParams }: Pro
           </div>
         </Card>
 
+        <Card className="p-5 flex flex-col gap-1.5">
+          <h3 className="text-[15px] font-semibold tracking-tight text-ink">
+            Per-visitor try-on limit
+          </h3>
+          <p className="text-sm text-muted">
+            {brand.tryOnLimitEnabled
+              ? `${brand.tryOnLimitPerIp} try-on${
+                  brand.tryOnLimitPerIp === 1 ? "" : "s"
+                } per shopper IP, resetting ${
+                  brand.tryOnLimitPeriod === "MONTHLY" ? "every month" : "every day"
+                }. The brand manages this in its own settings.`
+              : "Disabled — this brand allows unlimited try-ons per shopper."}
+          </p>
+        </Card>
+
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label={`Try-ons (${active.label})`} value={analytics.total.toLocaleString()} />
           <StatCard label="Completed" value={analytics.completed.toLocaleString()} />

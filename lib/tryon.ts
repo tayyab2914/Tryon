@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
 import { runTryOn as generateTryOn } from "@/lib/gemini";
 
@@ -12,6 +11,8 @@ export interface RunTryOnInput {
   brandId: string;
   /** Human-readable product label for the dashboard event log. */
   productLabel?: string;
+  /** Public URL of the product image the shopper tried on. */
+  productUrl?: string;
   /** Salted hash of the shopper's IP, for per-IP rate-limit accounting. */
   ipHash?: string | null;
   personImage: ImageInput;
@@ -37,7 +38,7 @@ export async function runTryOn(input: RunTryOnInput): Promise<RunTryOnResult> {
       garmentBase64: input.garmentImage.data.toString("base64"),
       garmentMimeType: input.garmentImage.mimeType,
     });
-    await logEvent(input.brandId, input.productLabel, "COMPLETED", null, input.ipHash);
+    await logEvent(input.brandId, input.productLabel, input.productUrl, "COMPLETED", null, input.ipHash);
     return {
       image: {
         data: Buffer.from(result.imageBase64, "base64"),
@@ -46,7 +47,7 @@ export async function runTryOn(input: RunTryOnInput): Promise<RunTryOnResult> {
     };
   } catch (err) {
     const detail = err instanceof Error ? err.message.slice(0, 200) : "error";
-    await logEvent(input.brandId, input.productLabel, "FAILED", detail, input.ipHash);
+    await logEvent(input.brandId, input.productLabel, input.productUrl, "FAILED", detail, input.ipHash);
     throw err;
   }
 }
@@ -55,6 +56,7 @@ export async function runTryOn(input: RunTryOnInput): Promise<RunTryOnResult> {
 async function logEvent(
   brandId: string,
   productLabel: string | undefined,
+  productUrl: string | undefined,
   status: "COMPLETED" | "FAILED",
   error: string | null,
   ipHash?: string | null,
@@ -64,7 +66,7 @@ async function logEvent(
       data: {
         brandId,
         garment: productLabel?.trim() || "Virtual try-on",
-        shopper: `anon_${randomUUID().slice(0, 4)}`,
+        productUrl: productUrl?.trim() || null,
         status,
         error,
         ipHash: ipHash ?? null,

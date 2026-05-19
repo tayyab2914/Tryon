@@ -109,7 +109,14 @@ export async function POST(request: NextRequest) {
       mimeType: photo.type,
     };
 
-    const { image } = await runTryOn({ brandId, productLabel, ipHash, personImage, garmentImage });
+    const { image } = await runTryOn({
+      brandId,
+      productLabel,
+      productUrl: garmentUrl,
+      ipHash,
+      personImage,
+      garmentImage,
+    });
 
     // Result is returned inline and never stored anywhere.
     return json(

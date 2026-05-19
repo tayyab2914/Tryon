@@ -71,7 +71,8 @@ model TryOn {
   id              String      @id @default(cuid())
   brandId         String
   garment         String
-  shopper         String
+  // Public URL of the product image the shopper tried on.
+  productUrl      String?
   status          TryOnStatus @default(PROCESSING)
   // gs:// URIs in the GCS bucket. Inputs are uploaded before the Vertex AI
   // call; resultImageUri is set once generation completes.

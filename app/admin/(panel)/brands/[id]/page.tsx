@@ -239,7 +239,7 @@ export default async function AdminBrandDetailPage({ params, searchParams }: Pro
               <thead>
                 <tr className="text-left text-xs text-muted">
                   <th className="px-5 py-2.5 font-medium">Product</th>
-                  <th className="px-5 py-2.5 font-medium">Shopper</th>
+                  <th className="px-5 py-2.5 font-medium">Product link</th>
                   <th className="px-5 py-2.5 font-medium">Status</th>
                   <th className="px-5 py-2.5 font-medium text-right">When</th>
                 </tr>
@@ -248,7 +248,21 @@ export default async function AdminBrandDetailPage({ params, searchParams }: Pro
                 {recentTryOns.map((t) => (
                   <tr key={t.id} className="border-t border-line">
                     <td className="px-5 py-3 text-ink">{t.garment}</td>
-                    <td className="px-5 py-3 text-muted font-mono text-xs">{t.shopper}</td>
+                    <td className="px-5 py-3">
+                      {t.productUrl ? (
+                        <a
+                          href={t.productUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={t.productUrl}
+                          className="font-mono text-xs text-accent hover:underline"
+                        >
+                          {t.productUrl}
+                        </a>
+                      ) : (
+                        <span className="text-muted text-xs">—</span>
+                      )}
+                    </td>
                     <td className="px-5 py-3">
                       <span
                         className={`inline-flex rounded-full px-2 py-0.5 text-xs ${statusClass[t.status]}`}

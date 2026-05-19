@@ -7,7 +7,17 @@ function createClient(): PrismaClient {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error("DATABASE_URL is not set");
   return new PrismaClient({
-    adapter: new PrismaPg(connectionString),
+    // Cap the pg connection pool well below Supabase's session-pooler limit
+    // (pool_size: 15). Without this, a page that fans out many queries via
+    // Promise.all — or a hot-reloading dev server with leftover pools — can
+    // exhaust the pooler and fail with EMAXCONNSESSION. Excess concurrent
+    // queries simply queue on the pool instead of opening new connections.
+    adapter: new PrismaPg({
+      connectionString,
+      max: 5,
+      idleTimeoutMillis: 10_000,
+      connectionTimeoutMillis: 15_000,
+    }),
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
 }

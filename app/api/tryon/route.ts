@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
 
     // --- Per-IP rate limit: cap how many try-ons one shopper can generate ---
     const ipHash = ipHashFromHeaders(request.headers);
+    console.log(`Try-on request for brand ${brandId} from IP hash ${ipHash}`);
     const limit = await checkIpLimit(brand.id, ipHash, {
       enabled: brand.tryOnLimitEnabled,
       perIp: brand.tryOnLimitPerIp,

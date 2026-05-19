@@ -10,16 +10,6 @@ const statusClass: Record<TryOnStatus, string> = {
   FAILED: "bg-red-50 text-danger",
 };
 
-/** Strips the protocol and `www.` for a compact, readable link label. */
-function prettyUrl(url: string): string {
-  try {
-    const u = new URL(url);
-    return u.hostname.replace(/^www\./, "") + (u.pathname === "/" ? "" : u.pathname);
-  } catch {
-    return url;
-  }
-}
-
 function relativeTime(date: Date): string {
   const seconds = Math.round((Date.now() - date.getTime()) / 1000);
   if (seconds < 60) return "just now";
@@ -59,7 +49,6 @@ export async function RecentTryOns({ limit = 5 }: { limit?: number }) {
         <thead>
           <tr className="text-left text-xs text-muted">
             <th className="px-5 py-2.5 font-medium">Product</th>
-            <th className="px-5 py-2.5 font-medium">Product link</th>
             <th className="px-5 py-2.5 font-medium">Status</th>
             <th className="px-5 py-2.5 font-medium text-right">When</th>
           </tr>
@@ -81,21 +70,6 @@ export async function RecentTryOns({ limit = 5 }: { limit?: number }) {
                   )}
                   <span>{r.garment}</span>
                 </div>
-              </td>
-              <td className="px-5 py-3">
-                {r.productUrl ? (
-                  <a
-                    href={r.productUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={r.productUrl}
-                    className="inline-block max-w-65 truncate align-middle font-mono text-xs text-accent hover:underline"
-                  >
-                    {prettyUrl(r.productUrl)}
-                  </a>
-                ) : (
-                  <span className="text-muted text-xs">—</span>
-                )}
               </td>
               <td className="px-5 py-3">
                 <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${statusClass[r.status]}`}>
